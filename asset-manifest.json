@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/resume-parser/static/css/main.854f35bb.css",
+    "main.js": "/resume-parser/static/js/main.50875e4f.js",
+    "index.html": "/resume-parser/index.html",
+    "main.854f35bb.css.map": "/resume-parser/static/css/main.854f35bb.css.map",
+    "main.50875e4f.js.map": "/resume-parser/static/js/main.50875e4f.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.854f35bb.css",
+    "static/js/main.50875e4f.js"
+  ]
+}
