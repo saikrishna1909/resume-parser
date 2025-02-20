@@ -15,9 +15,15 @@ router = APIRouter()
 @router.get("/details/{resume_id}")
 async def get_resume(resume_id: str):
     try:
+        if not ObjectId.is_valid(resume_id):  # ✅ Validate ID before converting
+            raise HTTPException(status_code=400, detail="Invalid ObjectId format")
+
         document = resume_collection.find_one({"_id": ObjectId(resume_id)})  # ✅ Correct collection name
-        if document:
-            return convert_objectid(document)  # ✅ Convert ObjectId
-        raise HTTPException(status_code=404, detail="Resume not found")
+        
+        if not document:
+            raise HTTPException(status_code=404, detail="Resume not found")
+        
+        return convert_objectid(document)  # ✅ Convert ObjectId to string
+    
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid resume ID format: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Server Error: {str(e)}")
