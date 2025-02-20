@@ -3,10 +3,9 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pymongo import MongoClient
 from gridfs import GridFS
 from bson import ObjectId
+from bson.errors import InvalidId
 import traceback
 from io import BytesIO
-# from pymongo.errors import InvalidId
-from bson.errors import InvalidId  # ✅ Correct import
 
 router = APIRouter()
 
@@ -27,32 +26,23 @@ async def upload_resume(file: UploadFile = File(...)):
     try:
         print(f"📂 Uploading file: {file.filename}")
 
-        # ✅ Check if file with the same name already exists
-        existing_resume = resume_collection.find_one({"filename": file.filename})
-        if existing_resume:
+        # ✅ Prevent duplicate filenames
+        if resume_collection.find_one({"filename": file.filename}):
             raise HTTPException(status_code=400, detail="File with the same name already exists")
 
         # ✅ Store file in GridFS
         file_id = fs.put(file.file, filename=file.filename)
         print(f"✅ File stored in GridFS with ID: {file_id}")
 
-        # ✅ Insert resume metadata into MongoDB
-        resume_data = {
-            "filename": file.filename,
-            "file_id": str(file_id)  # Convert ObjectId to string
-        }
+        # ✅ Store metadata in MongoDB
+        resume_data = {"filename": file.filename, "file_id": str(file_id)}
         inserted = resume_collection.insert_one(resume_data)
         print(f"✅ Metadata inserted into MongoDB with ID: {inserted.inserted_id}")
 
-        return JSONResponse(content={
-            "message": "File uploaded successfully",
-            "file_id": str(file_id),
-            "inserted_id": str(inserted.inserted_id)
-        })
+        return JSONResponse(content={"message": "File uploaded successfully", "file_id": str(file_id), "inserted_id": str(inserted.inserted_id)})
 
     except Exception as e:
-        print("❌ Error during file upload:", str(e))
-        print(traceback.format_exc())
+        print("❌ Error during file upload:", traceback.format_exc())
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
@@ -60,23 +50,15 @@ async def upload_resume(file: UploadFile = File(...)):
 @router.get("/resumes")
 async def get_resumes():
     try:
-        resumes = resume_collection.find()
-        resume_list = [
-            {
-                "_id": str(resume["_id"]),
-                "filename": resume["filename"],
-                "file_id": resume["file_id"]
-            }
-            for resume in resumes
-        ]
-        return {"resumes": resume_list}
+        resumes = list(resume_collection.find({}, {"_id": 1, "filename": 1, "file_id": 1}))
+        return {"resumes": [{"_id": str(res["_id"]), "filename": res["filename"], "file_id": res["file_id"]} for res in resumes]}
 
     except Exception as e:
-        print("❌ Error fetching resumes:", str(e))
+        print("❌ Error fetching resumes:", traceback.format_exc())
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
-# ✅ View Resume Details (Validates ObjectId Format)
+# ✅ View Resume Details
 @router.get("/resume/{resume_id}")
 async def get_resume(resume_id: str):
     try:
@@ -87,20 +69,14 @@ async def get_resume(resume_id: str):
         if not resume:
             raise HTTPException(status_code=404, detail="Resume not found")
 
-        return {
-            "_id": str(resume["_id"]),
-            "filename": resume["filename"],
-            "file_id": resume["file_id"]
-        }
+        return {"_id": str(resume["_id"]), "filename": resume["filename"], "file_id": resume["file_id"]}
 
-    except InvalidId:
-        raise HTTPException(status_code=400, detail="Invalid ObjectId format")
     except Exception as e:
-        print("❌ Error fetching resume details:", str(e))
+        print("❌ Error fetching resume details:", traceback.format_exc())
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
-# ✅ Download Resume (Validates File ID)
+# ✅ Download Resume
 @router.get("/download/{file_id}")
 async def download_resume(file_id: str):
     try:
@@ -117,41 +93,30 @@ async def download_resume(file_id: str):
             headers={"Content-Disposition": f"attachment; filename={file_obj.filename}"}
         )
 
-    except InvalidId:
-        raise HTTPException(status_code=400, detail="Invalid ObjectId format")
     except Exception as e:
-        print("❌ Error downloading file:", str(e))
+        print("❌ Error downloading file:", traceback.format_exc())
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
+# ✅ Delete Resume
 # ✅ Delete Resume (Removes File from GridFS & MongoDB)
-
-
 @router.delete("/resumes/{resume_id}")
 async def delete_resume(resume_id: str):
     try:
+        # Validate and convert resume_id to ObjectId
         if not ObjectId.is_valid(resume_id):
             raise HTTPException(status_code=400, detail="Invalid resume ID format")
 
+        # Check if the document exists before deleting
         resume = resume_collection.find_one({"_id": ObjectId(resume_id)})
         if not resume:
             raise HTTPException(status_code=404, detail="Resume not found")
 
-        # ✅ Check if file_id exists before attempting deletion
-        file_id = resume.get("file_id")
-        if file_id:
-            if fs.exists({"_id": ObjectId(file_id)}):
-                fs.delete(ObjectId(file_id))  # ✅ Delete from GridFS
-
-        # ✅ Delete from MongoDB
-        delete_result = resume_collection.delete_one({"_id": ObjectId(resume_id)})
-        if delete_result.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="Resume not found in database")
-
-        return {"message": "✅ Resume deleted successfully"}
+        # Delete the document
+        resume_collection.delete_one({"_id": ObjectId(resume_id)})
+        return {"message": "Resume deleted successfully"}
 
     except InvalidId:
-        raise HTTPException(status_code=400, detail="Invalid ObjectId format")
+        raise HTTPException(status_code=400, detail="Invalid resume ID format")
     except Exception as e:
-        print(f"❌ Error deleting resume: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
