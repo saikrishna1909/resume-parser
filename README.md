@@ -4,14 +4,14 @@
 📄 Resume Parser
 A web-based Resume Parser that extracts key details from resumes (PDF/DOCX), stores them in MongoDB (GridFS), and provides skill enhancement suggestions using Gemini API with Langchain.
 
-🚀 Features
+### 🚀 Features
 ✅ Upload and extract key resume details (skills, experience, education, contact info).
 ✅ Store resumes in MongoDB GridFS and extracted data in MongoDB Collections.
 ✅ Display historical resumes with extracted details in a tabular format.
 ✅ Gemini API integration for skill improvement suggestions.
 ✅ Minimal and neat React frontend for easy navigation.
 
-🏗️ Project Structure
+### 🏗️ Project Structure
 bash
 Copy
 Edit
@@ -35,20 +35,21 @@ resume-parser/
 │── main.py
 
 
-🛠️ Tech Stack
+### 🛠️ Tech Stack
 
-🌐 Frontend
+## 🌐 Frontend
 React.js (Vite)
 Axios (API Calls)
 CSS (Normal CSS for styling)
-⚙️ Backend
+
+## ⚙️ Backend
 
 FastAPI (Python Web Framework)
 MongoDB Atlas + GridFS (Resume Storage)
 Langchain + Gemini API (Skill Suggestion)
 Pydantic (Data Validation)
 
-⚙️ Setup Instructions
+### ⚙️ Setup Instructions
 🔹 1. Clone the Repository
 sh
 Copy
@@ -80,7 +81,7 @@ npm install
 npm run dev
 Frontend Running on: http://localhost:5173
 
-📂 API Endpoints
+### 📂 API Endpoints
 📌 Upload Resume
 POST /upload
 Request: Upload a PDF/DOCX file
