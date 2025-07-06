@@ -12,9 +12,7 @@ A web-based Resume Parser that extracts key details from resumes (PDF/DOCX), sto
 ✅ Minimal and neat React frontend for easy navigation.
 
 ### 🏗️ Project Structure
-bash
-Copy
-Edit
+### bash
 resume-parser/
 │── backend/              # Backend (FastAPI)
 │   ├── app/             
